@@ -44,6 +44,11 @@ public class GraphActivity extends AppCompatActivity {
         dataSet.setLineWidth(2f);
         dataSet.setCircleRadius(5f);
         dataSet.setValueTextSize(10f);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        dataSet.setDrawFilled(true);
+        dataSet.setFillDrawable(getResources().getDrawable(R.drawable.header_gradient_mesh)); // Uses your gradient!
+        dataSet.setLineWidth(3f);
+        dataSet.setCircleColor(Color.parseColor("#4F46E5"));
 
         LineData lineData = new LineData(dataSet);
         weightChart.setData(lineData);
