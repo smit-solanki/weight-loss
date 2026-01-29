@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.WeightLoss">
         <activity
+            android:name=".GraphActivity"
+            android:exported="false" />
+        <activity
             android:name=".ExerciseActivity"
             android:exported="false" />
         <activity
