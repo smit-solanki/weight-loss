@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
 
     private EditText etAge, etWeight, etHeight;
     private RadioGroup rgGender;
-    private Button btnCalculate, btnExercise;
+    private Button btnCalculate, btnExercise, btnGraph;
     private TextView tvResult;
 
     private static final String PREFS_NAME = "UserHealthData";
@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
         btnCalculate = findViewById(R.id.btnCalculate);
         tvResult = findViewById(R.id.tvResult);
         btnExercise = findViewById(R.id.btnExercise);
+        btnGraph = findViewById(R.id.btnGraph);
 
         // This now loads the inputs AND the result text
         loadSavedData();
@@ -51,6 +52,11 @@ public class MainActivity extends AppCompatActivity {
 
         btnExercise.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ExerciseActivity.class);
+            startActivity(intent);
+        });
+
+        btnGraph.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, GraphActivity.class);
             startActivity(intent);
         });
     }
