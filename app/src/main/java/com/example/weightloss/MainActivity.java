@@ -1,8 +1,16 @@
 package com.example.weightloss;
 
+import android.Manifest;
 import android.animation.ObjectAnimator;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
@@ -13,8 +21,11 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 
@@ -22,7 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private EditText etAge, etWeight, etHeight;
     private RadioGroup rgGender;
@@ -30,17 +41,13 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton btnAddSmall, btnAddLarge;
     private TextView tvResult;
 
-    // ONE Preference Name for everything
     private static final String PREFS_NAME = "UserHealthData";
-
-    // Input Keys
     private static final String KEY_WEIGHT = "last_weight";
     private static final String KEY_HEIGHT = "last_height";
     private static final String KEY_AGE = "last_age";
     private static final String KEY_DATE = "last_update_date";
     private static final String KEY_RESULT = "last_bmi_result";
 
-    // Water Keys (Consolidated)
     private static final String KEY_WATER_CURRENT = "water_current";
     private static final String KEY_WATER_GOAL = "water_goal";
     private static final String KEY_WATER_RESET_DATE = "last_water_reset_date";
@@ -49,6 +56,14 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvWaterProgress;
     private int currentWater = 0;
     private int dailyGoal = 2500;
+
+    // Step Counter Variables
+    private SensorManager sensorManager;
+    private Sensor stepSensor;
+    private TextView tvSteps;
+    private boolean isSensorPresent = false;
+    private int stepsAtStart = 0;
+    private static final String KEY_STEPS_BOOT = "steps_at_boot";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,39 +83,71 @@ public class MainActivity extends AppCompatActivity {
         tvWaterProgress = findViewById(R.id.tvWaterProgress);
         btnAddSmall = findViewById(R.id.btnAddSmall);
         btnAddLarge = findViewById(R.id.btnAddLarge);
+        tvSteps = findViewById(R.id.tvSteps);
 
-        // 1. Load Data
+        // Request Activity Permission for Android 10+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACTIVITY_RECOGNITION}, 100);
+            }
+        }
+
+        // Initialize Sensor Manager
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null) {
+            stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+            isSensorPresent = true;
+        } else {
+            tvSteps.setText("Sensor not found");
+            isSensorPresent = false;
+        }
+
         loadSavedData();
-        checkMidnightReset(); // This loads currentWater and dailyGoal
+        checkMidnightReset();
 
-        // 2. Button Listeners
-        btnAddSmall.setOnClickListener(v -> {
-            currentWater += 250;
-            saveWaterData();
-        });
-
-        btnAddLarge.setOnClickListener(v -> {
-            currentWater += 500;
-            saveWaterData();
-        });
-
+        btnAddSmall.setOnClickListener(v -> { currentWater += 250; saveWaterData(); });
+        btnAddLarge.setOnClickListener(v -> { currentWater += 500; saveWaterData(); });
         btnCalculate.setOnClickListener(v -> processHealthData());
-
-        btnExercise.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, ExerciseActivity.class));
-        });
-
-        btnGraph.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, GraphActivity.class));
-        });
-
+        btnExercise.setOnClickListener(v -> startActivity(new Intent(this, ExerciseActivity.class)));
+        btnGraph.setOnClickListener(v -> startActivity(new Intent(this, GraphActivity.class)));
         waterProgressBar.setOnClickListener(v -> showWaterMenu());
     }
 
+    // SENSOR METHODS (Corrected)
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {
+            if (stepsAtStart < 0) {
+                stepsAtStart = (int) event.values[0];
+            }
+            int currentSteps = (int) event.values[0] - stepsAtStart;
+            tvSteps.setText(String.valueOf(currentSteps));
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (isSensorPresent) {
+            sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (isSensorPresent) {
+            sensorManager.unregisterListener(this);
+        }
+    }
+
+    // WATER LOGIC
     private void updateWaterUI() {
         waterProgressBar.setMax(dailyGoal);
         int previousProgress = waterProgressBar.getProgress();
-
         ObjectAnimator animation = ObjectAnimator.ofInt(waterProgressBar, "progress", previousProgress, currentWater);
         animation.setDuration(800);
         animation.setInterpolator(new DecelerateInterpolator());
@@ -123,7 +170,6 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String todayDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
         String lastResetDate = prefs.getString(KEY_WATER_RESET_DATE, "");
-
         dailyGoal = prefs.getInt(KEY_WATER_GOAL, 2500);
 
         if (!todayDate.equals(lastResetDate)) {
@@ -137,8 +183,6 @@ public class MainActivity extends AppCompatActivity {
         }
         updateWaterUI();
     }
-
-    // ... (Keep your processHealthData and loadSavedData methods, just ensure they use PREFS_NAME) ...
 
     private void loadSavedData() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -168,7 +212,6 @@ public class MainActivity extends AppCompatActivity {
         EditText input = new EditText(this);
         input.setHint("Enter goal in Liters (e.g. 3.0)");
         input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-
         new AlertDialog.Builder(this)
                 .setTitle("Set Daily Goal")
                 .setView(input)
@@ -183,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void processHealthData() {
         if (isAlreadyUpdatedToday()) {
-            Toast.makeText(this, "Warning: Update tomorrow!", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Already updated today!", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -192,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         String heightStr = etHeight.getText().toString();
 
         if (ageStr.isEmpty() || weightStr.isEmpty() || heightStr.isEmpty()) {
-            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Fill all fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -203,34 +246,33 @@ public class MainActivity extends AppCompatActivity {
         float bmi = weight / (heightM * heightM);
 
         int selectedId = rgGender.getCheckedRadioButtonId();
-        RadioButton radioButton = findViewById(selectedId);
-        String gender = (radioButton != null) ? radioButton.getText().toString() : "Male";
+        RadioButton rb = findViewById(selectedId);
+        String gender = (rb != null) ? rb.getText().toString() : "Male";
 
         double bmr = gender.equalsIgnoreCase("Male")
                 ? (10 * weight) + (6.25 * heightCm) - (5 * age) + 5
                 : (10 * weight) + (6.25 * heightCm) - (5 * age) - 161;
 
         String status = (bmi < 18.5) ? "Underweight" : (bmi < 25) ? "Healthy" : (bmi < 30) ? "Overweight" : "Obese";
-        String resultDisplay = String.format(Locale.getDefault(), "Gender: %s\nBMI: %.1f (%s)\nDaily Calorie Goal: %.0f kcal", gender, bmi, status, bmr);
+        String res = String.format(Locale.getDefault(), "BMI: %.1f (%s)\nBase Burn: %.0f kcal", bmi, status, bmr);
 
-        tvResult.setText(resultDisplay);
-        saveData(weight, heightCm, age, resultDisplay, bmr);
+        tvResult.setText(res);
+        saveData(weight, heightCm, age, res);
     }
 
     private boolean isAlreadyUpdatedToday() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-        return today.equals(prefs.getString(KEY_DATE, ""));
+        return today.equals(getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_DATE, ""));
     }
 
-    private void saveData(float weight, float height, int age, String resultText, double bmr) {
-        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
-        editor.putFloat(KEY_WEIGHT, weight);
-        editor.putFloat(KEY_HEIGHT, height);
-        editor.putInt(KEY_AGE, age);
-        editor.putString(KEY_DATE, new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
-        editor.putString(KEY_RESULT, resultText);
-        editor.apply();
-        Toast.makeText(this, "Data Saved Successfully!", Toast.LENGTH_SHORT).show();
+    private void saveData(float weight, float height, int age, String res) {
+        SharedPreferences.Editor ed = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+        ed.putFloat(KEY_WEIGHT, weight);
+        ed.putFloat(KEY_HEIGHT, height);
+        ed.putInt(KEY_AGE, age);
+        ed.putString(KEY_DATE, new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
+        ed.putString(KEY_RESULT, res);
+        ed.apply();
+        Toast.makeText(this, "Saved!", Toast.LENGTH_SHORT).show();
     }
 }

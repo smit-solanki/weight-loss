@@ -63,11 +63,20 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="HYDRATION GOAL\nToday's Water Level"
+                        android:text="HYDRATION GOAL"
                         android:gravity="center"
                         android:letterSpacing="0.2"
                         android:textColor="#94A3B8"
                         android:textSize="11sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Today's Water Level"
+                        android:gravity="center"
+                        android:letterSpacing="0.2"
+                        android:textColor="#94A3B8"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <RelativeLayout
@@ -123,6 +132,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:text="+250ml"
+                            app:strokeColor="#3B82F6"
                             app:cornerRadius="12dp" />
 
                         <com.google.android.material.button.MaterialButton
@@ -134,8 +144,49 @@
                             android:textColor="#FFFFFF"
                             app:cornerRadius="12dp" />
                     </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Click (ML) to Add Drink Water"
+                        android:gravity="center"
+                        android:letterSpacing="0.2"
+                        android:textColor="#94A3B8"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                app:cardCornerRadius="15dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/white"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Today's Steps"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/tvSteps"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="36sp"
+                        android:textStyle="bold"
+                        android:textColor="#3F51B5" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/inputZone"
