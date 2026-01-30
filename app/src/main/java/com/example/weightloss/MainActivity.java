@@ -113,14 +113,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         waterProgressBar.setOnClickListener(v -> showWaterMenu());
     }
 
-    // SENSOR METHODS (Corrected)
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {
-            if (stepsAtStart < 0) {
-                stepsAtStart = (int) event.values[0];
+            float totalStepsSinceBoot = event.values[0];
+
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+            // If this is the first time EVER or a new day reset
+            if (prefs.getInt(KEY_STEPS_BOOT, -1) == -1) {
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putInt(KEY_STEPS_BOOT, (int) totalStepsSinceBoot);
+                editor.apply();
             }
-            int currentSteps = (int) event.values[0] - stepsAtStart;
+
+            int startSteps = prefs.getInt(KEY_STEPS_BOOT, 0);
+            int currentSteps = (int) totalStepsSinceBoot - startSteps;
+
+            // Update UI
             tvSteps.setText(String.valueOf(currentSteps));
         }
     }
@@ -177,6 +187,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             SharedPreferences.Editor editor = prefs.edit();
             editor.putInt(KEY_WATER_CURRENT, 0);
             editor.putString(KEY_WATER_RESET_DATE, todayDate);
+            editor.putInt(KEY_STEPS_BOOT, -1); // Reset step baseline for the new day
             editor.apply();
         } else {
             currentWater = prefs.getInt(KEY_WATER_CURRENT, 0);
