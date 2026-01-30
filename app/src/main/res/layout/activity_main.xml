@@ -57,6 +57,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="24dp"
+                    android:background="@color/white"
                     android:gravity="center">
 
                     <TextView
@@ -149,6 +150,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:background="@color/white"
                     android:padding="24dp">
 
                     <TextView
@@ -177,6 +179,7 @@
                             android:button="@null"
                             android:gravity="center"
                             android:text="Male"
+                            android:textColor="@color/black"
                             android:checked="true" />
                         <RadioButton
                             android:id="@+id/rbFemale"
@@ -186,7 +189,8 @@
                             android:background="@drawable/modern_toggle_selector"
                             android:button="@null"
                             android:gravity="center"
-                            android:text="Female" />
+                            android:text="Female"
+                            android:textColor="@color/black"/>
                     </RadioGroup>
 
                     <EditText
@@ -196,6 +200,8 @@
                         android:layout_marginTop="16dp"
                         android:background="@drawable/field_style"
                         android:hint="Current Age"
+                        android:textColorHint="@color/black"
+                        android:textColor="@color/black"
                         android:inputType="number"
                         android:paddingHorizontal="16dp" />
 
@@ -213,6 +219,8 @@
                             android:layout_marginEnd="6dp"
                             android:background="@drawable/field_style"
                             android:hint="Weight (kg)"
+                            android:textColorHint="@color/black"
+                            android:textColor="@color/black"
                             android:inputType="numberDecimal"
                             android:paddingHorizontal="16dp" />
 
@@ -225,6 +233,8 @@
                             android:background="@drawable/field_style"
                             android:hint="Height (cm)"
                             android:inputType="numberDecimal"
+                            android:textColorHint="@color/black"
+                            android:textColor="@color/black"
                             android:paddingHorizontal="16dp" />
                     </LinearLayout>
 
